@@ -9,6 +9,9 @@ const EditTaskModal = ({ isOpen, onClose, task }) => {
   const [description, setDescription] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
+  const [startTimeError, setStartTimeError] = useState('');
+  const [endTimeError, setEndTimeError] = useState('');
+  const [error, setError] = useState('');
   const dispatch = useDispatch();
 
   const isCreateMode = task === null;
@@ -29,28 +32,49 @@ const EditTaskModal = ({ isOpen, onClose, task }) => {
   }, [task]);
 
   const handleSave = () => {
+    setStartTimeError('');
+    setEndTimeError('');
+    setError('');
+    if (!startTime) {
+      setStartTimeError('Start time cannot be empty.');
+      return;
+    }
+    if (!endTime) {
+      setEndTimeError('End time cannot be empty.');
+      return;
+    }
+    if (moment(endTime).isBefore(moment(startTime))) {
+      setEndTimeError('End time cannot be before start time.');
+      return;
+    }
+
     const formattedStartTime = moment(startTime).toISOString();
     const formattedEndTime = moment(endTime).toISOString();
 
     const taskData = {
+      id: task && task.id,
       title,
       description,
       start_time: formattedStartTime,
       end_time: formattedEndTime,
     };
 
-    if (task && task.id) {
-      taskData.id = task.id;
-      dispatch(updateTask(taskData)).then(() => {
+    const action = task && task.id ? updateTask(taskData) : createTask(taskData);
+    dispatch(action).then(response => {
+      console.log('responseMalaila', response.error)
+      if(response.error) {
+        if (response.payload && Array.isArray(response.payload)) {
+          setError(response.payload.join(', '));
+        } else {
+          setError('An error occurred while saving the task.');
+        }
+      } else {
         onClose();
-      }).catch(error => {
-        console.error('There was an error updating the task:', error);
-      });
-    } else {
-      dispatch(createTask(taskData)).then(() => {
-        onClose();
-      });
-    }
+      }
+    }).catch(error => {
+      console.error('There was an error updating the task:', error);
+      setError('An error occurred while saving the task.');
+    })
   };
 
   if (!isOpen) return null;
@@ -88,6 +112,7 @@ const EditTaskModal = ({ isOpen, onClose, task }) => {
                   value={startTime} 
                   onChange={(e) => setStartTime(e.target.value)}
                 />
+                {startTimeError && <div className="text-danger">{startTimeError}</div>}
               </div>
               <div className="mb-3">
                 <input 
@@ -96,8 +121,10 @@ const EditTaskModal = ({ isOpen, onClose, task }) => {
                   value={endTime} 
                   onChange={(e) => setEndTime(e.target.value)}
                 />
+                {endTimeError && <div className="text-danger">{endTimeError}</div>}
               </div>
             </form>
+            {error && <div className="text-danger">{error}</div>}
           </div>
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose}>Close</button>

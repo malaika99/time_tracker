@@ -21,7 +21,7 @@ module Api
         if @task.save
           render json: @task, status: :created
         else
-          render json: @task.errors, status: :unprocessable_entity
+          render json: @task.errors.full_messages, status: :unprocessable_entity
         end
       end
     
@@ -29,7 +29,7 @@ module Api
         if @task.update(task_params)
           render json: @task
         else
-          render json: @task.errors, status: :unprocessable_entity
+          render json: @task.errors.full_messages, status: :unprocessable_entity
         end
       end
     
@@ -45,7 +45,7 @@ module Api
       end
     
       def task_params
-        params.require(:task).permit(:title, :description, :start_time, :end_time)
+        params.require(:task).permit(:id, :title, :description, :start_time, :end_time)
       end
     end
   end
